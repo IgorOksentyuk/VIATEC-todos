@@ -1,36 +1,27 @@
 import React, {
-  useCallback, useEffect, useRef, useState,
+  useEffect, useRef, useState,
 } from 'react';
 import classNames from 'classnames';
 import { Todo } from '../types/Todo';
-import * as todoService from '../api/todos';
-import { TodoError } from '../types/TodoError';
+import { useAppDispatch, useAppSelector } from '../app/hooks';
+import { deleteTodo, updateTodoStatus, updateTodoTitle } from '../slices/todosSlice';
 
 type Props = {
   todo: Todo,
-  todos: Todo[],
-  toggleTodoStatus: (todo: Todo) => void,
-  setTodosFromServer: React.Dispatch<React.SetStateAction<Todo[]>>,
-  newAddedTodoId: number | null,
-  setErrorMesage: (error: TodoError) => void,
-  setSelectedTodoId: (id: number | null) => void,
   selectedTodoId: number | null,
-  changedStatusIds: number[],
+  setSelectedTodoId: (id: number | null) => void,
 };
 
 export const TodoItem: React.FC<Props> = ({
   todo,
-  todos,
-  toggleTodoStatus,
-  setTodosFromServer,
-  newAddedTodoId,
-  setErrorMesage,
-  setSelectedTodoId,
   selectedTodoId,
-  changedStatusIds,
+  setSelectedTodoId,
 }) => {
   const [editedTodoId, setEditedTodoId] = useState<number | null>(null);
   const [newTitle, setNewTitle] = useState('');
+
+  const dispatch = useAppDispatch();
+  const { loading } = useAppSelector(state => state.todos);
 
   const inputRef = useRef<HTMLInputElement | null>(null);
 
@@ -40,58 +31,26 @@ export const TodoItem: React.FC<Props> = ({
     }
   }, [editedTodoId]);
 
-  const deleteTodo = useCallback((todoId: number) => {
+  const toggleTodoStatus = async (todo: Todo) => {
+    setSelectedTodoId(todo.id);
+    await dispatch(updateTodoStatus(todo));
+    setSelectedTodoId(null);
+  };
+
+  const handleDeleteTodo = async (todoId: number) => {
     setSelectedTodoId(todoId);
+    await dispatch(deleteTodo(todoId));
+    setSelectedTodoId(null);
+  };
 
-    setTimeout(() => setTodosFromServer(
-      todos.filter(deletedTodo => deletedTodo.id !== todoId),
-    ), 300);
-
-    return todoService.deleteTodo(String(todoId))
-      .catch((error) => {
-        if (todos) {
-          setTodosFromServer(todos);
-        }
-
-        setErrorMesage(TodoError.delete);
-        throw error;
-      }).finally(() => setSelectedTodoId(null));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [todos]);
-
-  const updateTodoTitle = useCallback(async ({
-    id,
-    title,
-    userId,
-    completed,
-  }: Todo) => {
+  const handleUpdateTodoTitle = async (todo: Todo) => {
     try {
-      const newTodos = todos?.map(newTodo => {
-        if (newTodo.id === id) {
-          setSelectedTodoId(newTodo.id);
-
-          return { ...todo, title };
-        }
-
-        return newTodo;
-      });
-
-      await todoService.updateTodo({
-        id,
-        title,
-        userId,
-        completed,
-      });
+      await dispatch(updateTodoTitle(todo));
       setEditedTodoId(null);
-      setTodosFromServer(newTodos);
-    } catch {
-      setErrorMesage(TodoError.update);
-      setTodosFromServer(todos);
     } finally {
       setSelectedTodoId(null);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [todos]);
+  };
 
   const saveChanges = (newTodo: Todo) => {
     if (newTitle.trim() === newTodo.title) {
@@ -101,12 +60,13 @@ export const TodoItem: React.FC<Props> = ({
     }
 
     if (newTitle.trim() === '') {
-      deleteTodo(newTodo.id);
+      handleDeleteTodo(newTodo.id);
     }
 
     if (newTitle.trim() !== '') {
-      updateTodoTitle({ ...newTodo, title: newTitle });
+      handleUpdateTodoTitle({ ...newTodo, title: newTitle });
     }
+
   };
 
   const submitChanges = (
@@ -123,6 +83,7 @@ export const TodoItem: React.FC<Props> = ({
     newTodo: Todo,
   ) => {
     if (event.detail === 2) {
+      setSelectedTodoId(newTodo.id);
       setEditedTodoId(newTodo.id);
       setNewTitle(newTodo.title);
     }
@@ -172,7 +133,7 @@ export const TodoItem: React.FC<Props> = ({
               <button
                 type="button"
                 className="todo__remove"
-                onClick={() => deleteTodo(todo.id)}
+                onClick={() => handleDeleteTodo(todo.id)}
               >
                 ×
               </button>
@@ -183,9 +144,8 @@ export const TodoItem: React.FC<Props> = ({
         'modal',
         'overlay',
         {
-          'is-active': todo.id === selectedTodoId
-            || todo.id === newAddedTodoId
-            || changedStatusIds?.includes(todo.id),
+          'is-active': loading === true
+            && (selectedTodoId === todo.id)
         },
       )}
       >

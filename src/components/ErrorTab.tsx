@@ -1,16 +1,19 @@
 import React, { useEffect } from 'react';
 import classNames from 'classnames';
 import { TodoError } from '../types/TodoError';
+import { useAppDispatch } from '../app/hooks';
+import { setErrorMessage } from '../slices/todosSlice';
 
 type Props = {
   errorMesage: TodoError,
-  setErrorMesage: (error: TodoError) => void,
 };
 
-export const ErrorTab: React.FC<Props> = ({ errorMesage, setErrorMesage }) => {
+export const ErrorTab: React.FC<Props> = ({ errorMesage }) => {
+  const dispatch = useAppDispatch();
+
   useEffect(() => {
-    setTimeout(() => setErrorMesage(TodoError.empty), 3000);
-  }, [setErrorMesage]);
+    setTimeout(() => dispatch(setErrorMessage(TodoError.empty)), 3000);
+  }, [dispatch]);
 
   return (
     <div className={classNames(
@@ -27,7 +30,7 @@ export const ErrorTab: React.FC<Props> = ({ errorMesage, setErrorMesage }) => {
         type="button"
         className="delete"
         aria-label="delete"
-        onClick={() => setErrorMesage(TodoError.empty)}
+        onClick={() => dispatch(setErrorMessage(TodoError.empty))}
       />
     </div>
   );

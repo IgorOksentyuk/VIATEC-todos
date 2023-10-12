@@ -2,29 +2,35 @@ import React from 'react';
 import classNames from 'classnames';
 import { Todo } from '../types/Todo';
 import { Status } from '../types/Status';
+import { useAppDispatch, useAppSelector } from '../app/hooks';
+import { deleteTodo } from '../slices/todosSlice';
 
 type Props = {
-  todos: Todo[],
   selectedStatus: string,
   setSelectedStatus: (value: Status) => void;
-  deleteCompletedTodos: () => void,
   allCompletedTodos: Todo[],
   allActiveTodos: Todo[],
 };
 
 export const Footer: React.FC<Props> = ({
-  todos,
   selectedStatus,
   setSelectedStatus,
-  deleteCompletedTodos,
   allCompletedTodos,
   allActiveTodos,
 }) => {
+  const dispatch = useAppDispatch();
+  const { todos } = useAppSelector(state => state.todos);
+
+  const deleteCompletedTodos = () => {
+    allCompletedTodos.forEach((todo) => {
+      dispatch(deleteTodo(todo.id));
+    });
+  }
 
   return (
     <footer className="todoapp__footer">
       <span className="todo-count">
-        {`${todos.length} items left`}
+        {`${todos.length} справ залишилось`}
       </span>
 
       <nav className="filter">
@@ -78,11 +84,11 @@ export const Footer: React.FC<Props> = ({
         type="button"
         className={classNames(
           'todoapp__clear-completed',
-          { 'is-invisible': !allCompletedTodos },
+          { 'is-invisible': allCompletedTodos.length === 0 },
         )}
         onClick={deleteCompletedTodos}
       >
-        Clear completed
+        Видалити виконані
       </button>
     </footer>
   );

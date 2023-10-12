@@ -1,27 +1,17 @@
 import React, { useState, useCallback } from 'react';
-import { Todo } from '../types/Todo';
-import { TodoError } from '../types/TodoError';
-import * as todoService from '../api/todos';
-import { wait } from '../utils/fetchClient';
 import classNames from 'classnames';
+import { Todo } from '../types/Todo';
+import * as todoService from '../api/todos';
+import { useAppDispatch, useAppSelector } from '../app/hooks';
+import { addTodo, setErrorMessage, updateTodoStatus } from '../slices/todosSlice';
+import { TodoError } from '../types/TodoError';
 
-type Props = {
-  todos: Todo[],
-  setErrorMesage: (errorMesage: TodoError) => void,
-  setTodosFromServer: (todos: Todo[]) => void,
-  setChangedStatusIds: (ids: number[]) => void,
-  setNewAddedTodoId: (todoId: number | null) => void,
-};
-
-export const Header: React.FC<Props> = ({
-  todos,
-  setErrorMesage,
-  setTodosFromServer,
-  setChangedStatusIds,
-  setNewAddedTodoId,
-}) => {
+export const Header: React.FC = () => {
   const [todoTitle, setTodoTitle] = useState('');
   const [isInputDisabled, setIsInputDisabled] = useState(false);
+
+  const dispatch = useAppDispatch();
+  const { todos } = useAppSelector(state => state.todos);
 
   const todoTemp = {
     id: 0,
@@ -30,35 +20,25 @@ export const Header: React.FC<Props> = ({
     userId: todoService.USER_ID,
   };
 
-  const addTodo = useCallback(({ title, userId, completed }: Todo) => {
+  const handleAddTodo = async (todo: Todo) => {
     setIsInputDisabled(true);
 
-    return todoService.createTodo({ title, userId, completed })
-      .then(newTodo => {
-        setTodosFromServer([...todos, newTodo]);
-        setNewAddedTodoId(newTodo.id);
-      })
-      .catch(() => setErrorMesage(TodoError.add))
-      .finally(() => {
-        setTodoTitle('');
-
-        wait(300)
-          .then(() => {
-            setIsInputDisabled(false);
-            setNewAddedTodoId(null);
-          });
-      });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [todos]);
+    try {
+      await dispatch(addTodo(todo));
+    } finally {
+      setTodoTitle('');
+      setIsInputDisabled(false);
+    }
+  };
 
   const handleKeyPress = (event: React.KeyboardEvent<HTMLInputElement>) => {
     if (event.key === 'Enter') {
       event.preventDefault();
 
       if (todoTemp.title.trim() !== '') {
-        addTodo(todoTemp);
+        handleAddTodo(todoTemp);
       } else {
-        setErrorMesage(TodoError.emtyTitle);
+        dispatch(setErrorMessage(TodoError.emtyTitle));
       }
     }
   };
@@ -67,38 +47,17 @@ export const Header: React.FC<Props> = ({
     return todos.every((todo) => todo.completed);
   };
 
-  const updateSelectedTodoId = () => {
-    const differentStatusTodos = todos.filter(
-      (todo) => todo.completed === areAllCompleted(),
-    );
-
-    const ids = differentStatusTodos.map((todo) => todo.id);
-
-    setChangedStatusIds(ids);
-  };
-
   const toggleAllTodos = useCallback(async () => {
     const newStatus = !areAllCompleted();
 
-    const updatedTodos = todos.map(todo => {
-      return ({
-        ...todo,
-        completed: newStatus,
-      });
+    const updatePromises = todos.map(todo => {
+      if (todo.completed !== newStatus) {
+        return dispatch(updateTodoStatus(todo));
+      }
+      return Promise.resolve();
     });
 
-    updateSelectedTodoId();
-
-    try {
-      await Promise.all(
-        updatedTodos.map(updateTodo => todoService.updateTodo(updateTodo)),
-      );
-      setTodosFromServer(updatedTodos);
-    } catch {
-      setErrorMesage(TodoError.update);
-    } finally {
-      setChangedStatusIds([]);
-    }
+    await Promise.all(updatePromises);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [todos]);
 
@@ -118,7 +77,7 @@ export const Header: React.FC<Props> = ({
         <input
           type="text"
           className="todoapp__new-todo"
-          placeholder="What needs to be done?"
+          placeholder="Що потрібно виконати?"
           value={todoTitle}
           onChange={(event) => setTodoTitle(event.target.value)}
           onKeyDown={event => handleKeyPress(event)}
