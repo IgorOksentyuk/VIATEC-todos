@@ -62,6 +62,6 @@ The application provides informative error messages in case of issues related to
 ---
 
 ## How to run
-__1.__ git clone https://github.com/IgorOksentyuk/viatec-todos.git
-__2.__ npm install
-__3.__ npm start
+* git clone https://github.com/IgorOksentyuk/viatec-todos.git
+* npm install
+* npm start
