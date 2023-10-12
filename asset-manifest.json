@@ -1,10 +1,10 @@
 {
   "files": {
-    "main.css": "/static/css/main.0710cddf.css",
-    "main.js": "/static/js/main.a3a514a4.js",
-    "index.html": "/index.html",
-    "main.0710cddf.css.map": "/static/css/main.0710cddf.css.map",
-    "main.a3a514a4.js.map": "/static/js/main.a3a514a4.js.map"
+    "main.css": "/viatec-todos/static/css/main.0710cddf.css",
+    "main.js": "/viatec-todos/static/js/main.a3a514a4.js",
+    "index.html": "/viatec-todos/index.html",
+    "main.0710cddf.css.map": "/viatec-todos/static/css/main.0710cddf.css.map",
+    "main.a3a514a4.js.map": "/viatec-todos/static/js/main.a3a514a4.js.map"
   },
   "entrypoints": [
     "static/css/main.0710cddf.css",
